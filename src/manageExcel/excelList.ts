@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx';
 import { bicgVoc, itcgVoc, senOwner, BICGLimit } from '../_constants/vocabularies'
+import _ from "lodash";
 
 
 
@@ -62,7 +63,7 @@ export class ExcelFile {
         let fStage: any[] = mergedData.filter((reg) => (reg["P/U"] >= BICGLimit))
         let sndStage: any[] = fStage.filter((reg) => this.findStringOnSentence((reg[senOwner] as string)
             .toLowerCase()))
-        this.currentF = sndStage
+        this.currentF = _.uniqWith(sndStage, _.isEqual)
         return false
     }
 
@@ -73,6 +74,7 @@ export class ExcelFile {
     }
 
     generateExcelFile(importVal: Object[]) {
+        console.log(importVal)
         let ws = XLSX.utils.json_to_sheet(importVal)
         let wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Reporte");
