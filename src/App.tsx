@@ -1,7 +1,6 @@
 import React, { useCallback, useState, useEffect } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { ExcelFile } from './manageExcel/excelList'
-import * as XLSX from 'xlsx';
 
 export const App = (props: any) => {
 
@@ -9,16 +8,15 @@ export const App = (props: any) => {
   const excel = new ExcelFile()
 
 
-useEffect(()=> console.log(excel.working),[excel.working])
+  useEffect(() => console.log(excel.working), [excel.working])
 
 
   const onDrop = useCallback(acceptedFiles => {
     setFiles(acceptedFiles)
   }, [])
 
-  const loadFiles = () => {
-    let a = excel.readmultifiles(files)
-    console.log(a)
+  const loadFiles = async () => {
+    excel.readmultifiles(files).then((e: any) => excel.normalizeFiles(e))
   }
 
   const deleteFiles = () => {

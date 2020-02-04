@@ -1,47 +1,73 @@
 import * as XLSX from 'xlsx';
+import { bicgVoc, itcgVoc, senOwner, BICGLimit } from '../_constants/vocabularies'
 
 
 
 export class ExcelFile {
 
     reader: FileReader
-    currentFiles: any[]
     working: boolean = false
+    currentF: any[]
+
 
     constructor() {
         this.reader = new FileReader();
-        this.currentFiles = []
-    }
+        this.currentF = []
 
-    normalizeFiles() {
-        console.log('Processing...')
     }
 
     readmultifiles(files: any[]) {
-        this.working = true
-        let reader = new FileReader();
-        let newData: any[] = []
-        function readFile(index: number) {
-            if (index >= files.length) return;
-            var file = files[index];
+        return new Promise((resolve) => {
+            let resp: any = []
+            for (const [i, file] of files.entries() as any) {
+                const reader = new FileReader()
+                reader.onabort = () => console.log('file reading was aborted')
+                reader.onerror = () => console.log('file reading has failed')
+                reader.onload = (evt: any) => {
+                    const bstr = evt.target.result;
+                    const wb = XLSX.read(bstr, { type: 'binary' });
+                    const wsname = wb.SheetNames[0];
+                    const ws = wb.Sheets[wsname];
+                    const data = XLSX.utils.sheet_to_json(ws);
+                    resp[i] = data
+                    if (i + 1 === files.length) resolve(resp)
 
-            reader.onload = (evt: any) => {
-                const bstr = evt.target.result;
-                const wb = XLSX.read(bstr, { type: 'binary' });
-                const wsname = wb.SheetNames[0];
-                const ws = wb.Sheets[wsname];
-                const data = XLSX.utils.sheet_to_json(ws);
-                newData[index] = data
-                readFile(index + 1)
-            };
+                };
+                reader.readAsBinaryString(file)
+            }
+        }
+        )
 
-            reader.readAsBinaryString(file);
-        }
-        readFile(0);
-        if (newData.length > 0) {
-            this.working = false
-            return newData
-        }
     }
 
+    normalizeFiles(files: any[]) {
+        let filteredData: any[] = []
+        console.log('Processing...', files)
+        /**First filter layer */
+        let mergedData: any[] = [].concat.apply([], files)
+        /**Calculate price per unit (P/U) */
+        for (const row of mergedData) {
+            row["P/U"] = (+(row["US$ FOB"] / row.CANTIDAD).toFixed(2))
+        }
+        /** merged Arrays */
+        this.evaluateConditions(mergedData)
+    }
+
+    evaluateConditions(mergedData: any[]) {
+        let fStage: any[] = mergedData.filter((reg) => (reg["P/U"] >= BICGLimit))
+        let sndStage: any[] = fStage.filter((reg) => this.findStringOnSentence((reg[senOwner] as string)
+            .toLowerCase()))
+        console.log(sndStage, '2nd')
+    }
+
+    findStringOnSentence(sentence: string) {
+        /** for BICG */
+        return (bicgVoc.some((str) => sentence.search(str.sen) >= 0) &&
+            !(itcgVoc.some((str) => sentence.search(str.sen) >= 0))) 
+            
+            
+        }
+
+
 }
+
