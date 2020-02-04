@@ -41,14 +41,19 @@ export class ExcelFile {
     }
 
     normalizeFiles(files: any[]) {
-        let filteredData: any[] = []
         console.log('Processing...', files)
+
         /**First filter layer */
         let mergedData: any[] = [].concat.apply([], files)
+
         /**Calculate price per unit (P/U) */
         for (const row of mergedData) {
             row["P/U"] = (+(row["US$ FOB"] / row.CANTIDAD).toFixed(2))
+            row.DIA = parseInt(row.DIA)
+            row.MES = parseInt(row.MES)
+            row.AÑO = parseInt(row.AÑO)
         }
+
         /** merged Arrays */
         this.evaluateConditions(mergedData)
     }
@@ -57,16 +62,22 @@ export class ExcelFile {
         let fStage: any[] = mergedData.filter((reg) => (reg["P/U"] >= BICGLimit))
         let sndStage: any[] = fStage.filter((reg) => this.findStringOnSentence((reg[senOwner] as string)
             .toLowerCase()))
-        console.log(sndStage, '2nd')
+        this.currentF = sndStage
+        return false
     }
 
     findStringOnSentence(sentence: string) {
         /** for BICG */
         return (bicgVoc.some((str) => sentence.search(str.sen) >= 0) &&
-            !(itcgVoc.some((str) => sentence.search(str.sen) >= 0))) 
-            
-            
-        }
+            !(itcgVoc.some((str) => sentence.search(str.sen) >= 0)))
+    }
+
+    generateExcelFile(importVal: Object[]) {
+        let ws = XLSX.utils.json_to_sheet(importVal)
+        let wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Reporte");
+        XLSX.writeFile(wb, "sheetjs.xlsx");
+    }
 
 
 }

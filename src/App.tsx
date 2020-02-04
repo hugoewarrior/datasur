@@ -89,6 +89,11 @@ export const App = (props: any) => {
       <button disabled={files.length < 1} onClick={deleteFiles} >
         Clear Files
       </button>
+
+      {files.length > 0 ?
+        <button onClick={()=>excel.generateExcelFile(excel.currentF)} >
+          Download Results
+      </button> : null}
     </div>
 
   )
