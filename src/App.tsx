@@ -23,9 +23,6 @@ export const App = (props: any) => {
   const excel = new ExcelFile()
 
 
-  useEffect(() => console.log(working), [working])
-
-
   const onDrop = useCallback(acceptedFiles => {
     setFiles(acceptedFiles);
   }, [])
@@ -43,7 +40,7 @@ export const App = (props: any) => {
             setMessage(`We re sorry, no results were found`);
             setResults([])
           }
-        })
+        }).catch((m)=>setMessage(m))
       })
       .finally(() => {
         setWorking(false);
@@ -59,9 +56,9 @@ export const App = (props: any) => {
   }
 
   const deltedSelected = (row: any) => {
-    /* let f = files.filter((r: any) => r.name =! row.name)
-    setFiles(f) */
-    console.log(files)
+    let f = files.filter((r: any, k: number) => k !== row)
+    setFiles(f)
+    if (f.length < 1) setResults([])
 
   }
 
@@ -69,7 +66,10 @@ export const App = (props: any) => {
     setFiles([])
     setResults([])
   }
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: '.xlsx'
+  });
   const classes = mainAppStyles();
 
   return (
@@ -98,7 +98,7 @@ export const App = (props: any) => {
           </div> :
           <div className={classes.fileList}>
 
-            <Typography variant="h4"> {`${files.length} elementos seleccionados:`} </Typography>
+            <Typography variant="h4"> {`${files.length} elements selected:`} </Typography>
             <Divider style={{
               marginTop: 10, marginBottom: 10
             }} />
@@ -110,8 +110,8 @@ export const App = (props: any) => {
                 <ListItemText
                   classes={{ primary: classes.listItemText }}
                   primary={row.name} />
-                <Tooltip title="Borrar" placement="left">
-                  <IconButton onClick={() => deltedSelected(row)}>
+                <Tooltip title={`Delete ${row.name}`} placement="left">
+                  <IconButton onClick={() => deltedSelected(k)}>
                     <Clear />
                   </IconButton>
                 </Tooltip>
@@ -127,7 +127,8 @@ export const App = (props: any) => {
         <ButtonGroup size="medium">
           <Button variant="contained" color="primary" disabled={files.length < 1} onClick={loadFiles}>Process Files</Button>
           <Button disabled={results.length < 1}
-            variant="contained" color="primary"
+            variant="contained"
+            color="primary"
             onClick={exportFile}>
             Download Results
           </Button>

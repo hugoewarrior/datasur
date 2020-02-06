@@ -1,7 +1,6 @@
 import * as XLSX from 'xlsx';
 import { bicgVoc, itcgVoc, senOwner, BICGLimit } from '../_constants/vocabularies'
 import _ from "lodash";
-import { resolve } from 'dns';
 
 
 
@@ -10,7 +9,6 @@ export class ExcelFile {
     reader: FileReader
     working: boolean = false
     public currentF: any[]
-
 
     constructor() {
         this.reader = new FileReader();
@@ -32,10 +30,11 @@ export class ExcelFile {
                     const ws = wb.Sheets[wsname];
                     const data = XLSX.utils.sheet_to_json(ws);
                     resp[i] = data;
-                    if (i + 1 === files.length) resolve(resp);
-
                 };
                 reader.readAsBinaryString(file);
+                reader.onloadend = () => {
+                    if (i + 1 === files.length) resolve(resp);
+                }
             }
         }
         )
@@ -43,17 +42,18 @@ export class ExcelFile {
     }
 
     normalizeFiles(files: any[]) {
-        console.log('Processing...', files)
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
             /**First filter layer */
             let mergedData: any[] = [].concat.apply([], files);
-
             /**Calculate price per unit (P/U) */
             for (const row of mergedData) {
-                row["P/U"] = (+(row["US$ FOB"] / row.CANTIDAD).toFixed(2));
-                row.DIA = parseInt(row.DIA);
-                row.MES = parseInt(row.MES);
-                row.AÑO = parseInt(row.AÑO);
+                if (row) {
+                    row["P/U"] = (+(row["US$ FOB"] / row.CANTIDAD).toFixed(2));
+                    row.DIA = parseInt(row.DIA);
+                    row.MES = parseInt(row.MES);
+                    row.AÑO = parseInt(row.AÑO);
+                }
+                else reject("Ups! something went wrong, try again")
             }
             /** merged Arrays */
             let resp: any[] = this.evaluateConditions(mergedData);
